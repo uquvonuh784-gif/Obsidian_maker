@@ -16,7 +16,7 @@ export class AiChatModule implements PluginModule {
 
     constructor(plugin: ObsidianMaker) {
         this.plugin = plugin;
-        this.groqService = new GroqService(plugin.settings.aiChat);
+        this.groqService = new GroqService(plugin.settings.aiChat, plugin.app);
     }
 
     register(): void {

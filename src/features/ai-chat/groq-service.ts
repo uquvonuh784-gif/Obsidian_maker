@@ -1,4 +1,4 @@
-import { requestUrl } from 'obsidian';
+import { requestUrl, App, TFile } from 'obsidian';
 import type { ChatMessage } from '../../core/types';
 import type { AiChatSettings } from '../../core/settings';
 
@@ -41,9 +41,11 @@ interface GroqErrorResponse {
  */
 export class GroqService {
     private settings: AiChatSettings;
+    private app: App;
 
-    constructor(settings: AiChatSettings) {
+    constructor(settings: AiChatSettings, app: App) {
         this.settings = settings;
+        this.app = app;
     }
 
     /** Обновить ссылку на настройки (при hot-reload настроек) */
@@ -61,6 +63,18 @@ export class GroqService {
             throw new Error('Groq API key is not set. Go to Settings → Obsidian Maker → AI Chat.');
         }
 
+        // Получаем контекст текущей заметки
+        let contextText = '';
+        const activeFile = this.app.workspace.getActiveFile();
+        if (activeFile instanceof TFile) {
+            try {
+                const content = await this.app.vault.read(activeFile);
+                contextText = `\n\n---\n[System Info] Пользователь сейчас смотрит на заметку: "${activeFile.basename}".\nЕё содержимое:\n${content}\n---`;
+            } catch (e) {
+                console.error('[Obsidian Maker] Failed to read active file for context', e);
+            }
+        }
+
         // Формируем массив сообщений для API
         const groqMessages: GroqMessage[] = [];
 
@@ -73,11 +87,21 @@ export class GroqService {
         }
 
         // Преобразуем ChatMessage → GroqMessage
-        for (const msg of messages) {
+        for (let i = 0; i < messages.length; i++) {
+            const msg = messages[i];
+            if (!msg) continue;
+
             if (msg.role === 'user' || msg.role === 'assistant') {
+                let content = msg.content;
+
+                // Добавляем контекст только к самому последнему сообщению пользователя
+                if (i === messages.length - 1 && msg.role === 'user' && contextText) {
+                    content += contextText;
+                }
+
                 groqMessages.push({
                     role: msg.role,
-                    content: msg.content,
+                    content: content,
                 });
             }
         }
