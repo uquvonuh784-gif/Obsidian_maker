@@ -215,13 +215,16 @@ export class ActionRunner {
 
         new Notice('AI думает...');
 
-        // Отправляем запрос (GroqService сам добавит контент активной заметки в контекст, если она открыта)
+        // Отправляем запрос
         const aiResponse = await this.groqService.chat([{
             id: Date.now().toString(),
             role: 'user',
             content: finalPrompt,
             timestamp: Date.now()
-        }]);
+        }], {
+            includeContext: false,
+            systemPromptOverride: 'Ты полезный ИИ-ассистент, встроенный в текстовый редактор Markdown. Отвечай кратко, по делу и всегда выполняй запрошенное действие без объяснений.'
+        });
 
         // Пытаемся вставить ответ в активную заметку
         const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);

@@ -56,22 +56,28 @@ export class GroqService {
     /**
      * Отправить сообщение и получить ответ.
      * @param messages — вся история диалога
+     * @param options — дополнительные параметры (контекст, системный промпт)
      * @returns текст ответа ассистента
      */
-    async chat(messages: ChatMessage[]): Promise<string> {
+    async chat(messages: ChatMessage[], options?: { includeContext?: boolean, systemPromptOverride?: string }): Promise<string> {
         if (!this.settings.apiKey) {
             throw new Error('Groq API key is not set. Go to Settings → Obsidian Maker → AI Chat.');
         }
 
-        // Получаем контекст текущей заметки
+        const includeContext = options?.includeContext ?? true;
+        const systemPrompt = options?.systemPromptOverride !== undefined ? options.systemPromptOverride : this.settings.systemPrompt;
+
+        // Получаем контекст текущей заметки (если включено)
         let contextText = '';
-        const activeFile = this.app.workspace.getActiveFile();
-        if (activeFile instanceof TFile) {
-            try {
-                const content = await this.app.vault.read(activeFile);
-                contextText = `\n\n---\n[System Info] Пользователь сейчас смотрит на заметку: "${activeFile.basename}".\nЕё содержимое:\n${content}\n---`;
-            } catch (e) {
-                console.error('[Obsidian Maker] Failed to read active file for context', e);
+        if (includeContext) {
+            const activeFile = this.app.workspace.getActiveFile();
+            if (activeFile instanceof TFile) {
+                try {
+                    const content = await this.app.vault.read(activeFile);
+                    contextText = `\n\n---\n[System Info] Пользователь сейчас смотрит на заметку: "${activeFile.basename}".\nЕё содержимое:\n${content}\n---`;
+                } catch (e) {
+                    console.error('[Obsidian Maker] Failed to read active file for context', e);
+                }
             }
         }
 
@@ -79,10 +85,10 @@ export class GroqService {
         const groqMessages: GroqMessage[] = [];
 
         // System prompt
-        if (this.settings.systemPrompt) {
+        if (systemPrompt) {
             groqMessages.push({
                 role: 'system',
-                content: this.settings.systemPrompt,
+                content: systemPrompt,
             });
         }
 
