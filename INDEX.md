@@ -8,7 +8,7 @@
 **Obsidian Maker** — модульный плагин для Obsidian, объединяющий:
 - 🤖 **AI чат-ассистент** (Groq) в боковой панели
 - 🔘 **Кнопки-скрипты** для выполнения предопределённых действий
-- 🧠 **AI + Интеграция с Vault**: AI может читать, создавать и редактировать заметки
+- 🧠 **AI + Интеграция с Vault**: AI может читать, искать, создавать и редактировать заметки (через защищенный диалог)
 - 🔧 **Умные текстовые утилиты**
 
 ---
@@ -24,8 +24,8 @@ Obsidian_maker/
 │   │   ├── settings.ts          — Настройки с секциями + SettingTab
 │   │   └── module-registry.ts   — Реестр модулей: load/unload lifecycle
 │   ├── features/                — Feature-модули (каждый реализует PluginModule)
-│   │   ├── ai-chat/             — AI чат модуль (Groq api, UI чата, view)
-│   │   └── script-buttons/      — (В разработке: Фаза 3) Кнопки-скрипты
+│   │   ├── ai-chat/             — AI чат модуль (Groq api, UI чата, VaultService, парсинг JSON команд)
+│   │   └── script-buttons/      — Кнопки-скрипты (парсер Markdown, ActionRunner, UI кнопок)
 │   ├── ui/                      — Общие переиспользуемые Preact-компоненты
 │   └── utils/
 │       └── debounce.ts          — Утилиты (debounce, generateId)
