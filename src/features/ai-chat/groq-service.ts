@@ -73,8 +73,10 @@ export class GroqService {
             const activeFile = this.app.workspace.getActiveFile();
             if (activeFile instanceof TFile) {
                 try {
-                    const content = await this.app.vault.read(activeFile);
-                    contextText = `\n\n---\n[System Info] Пользователь сейчас смотрит на заметку: "${activeFile.basename}".\nЕё содержимое:\n${content}\n---`;
+                    const rawContent = await this.app.vault.read(activeFile);
+                    // Очищаем контекст от системных блоков и лишнего мусора
+                    const cleanedContent = this.cleanNoteContent(rawContent);
+                    contextText = `[КОНТЕКСТ ЗАМЕТКИ "${activeFile.basename}"]:\n${cleanedContent}\n[КОНЕЦ КОНТЕКСТА]\n\n`;
                 } catch (e) {
                     console.error('[Obsidian Maker] Failed to read active file for context', e);
                 }
@@ -100,9 +102,9 @@ export class GroqService {
             if (msg.role === 'user' || msg.role === 'assistant') {
                 let content = msg.content;
 
-                // Добавляем контекст только к самому последнему сообщению пользователя
+                // Добавляем контекст ПЕРЕД последним сообщением пользователя для лучшего фокуса
                 if (i === messages.length - 1 && msg.role === 'user' && contextText) {
-                    content += contextText;
+                    content = contextText + "ИНСТРУКЦИЯ: " + content;
                 }
 
                 groqMessages.push({
@@ -158,5 +160,33 @@ export class GroqService {
 
             throw new Error('Unknown error while calling Groq API.');
         }
+    }
+
+    /** Очистить текст заметки от кнопок и системного мусора перед отправкой в AI */
+    private cleanNoteContent(content: string): string {
+        if (!content) return '';
+
+        let cleaned = content;
+
+        // 1. Удаляем блоки кнопок om-button
+        cleaned = cleaned.replace(/```om-button[\s\S]*?```/g, '');
+
+        // 2. Удаляем системные подписи и эхо (чтобы AI не зацикливался на них)
+        const junkPhrases = [
+            /Я полезный ИИ-ассистент, встроенный в текстовый редактор Markdown[\s\S]*?без объяснений\.?/gi,
+            /Ты полезный ИИ-ассистент, встроенный в текстовый редактор Markdown[\s\S]*?без объяснений\.?/gi,
+            /Данный текст представляет собой описание роли и поведения полезного ИИ-ассистента\.?/gi,
+            /Нет текста заметки\. Чтобы придумать хештеги[\s\S]*?предоставьте текст заметки\.?/gi,
+            /Нет текста для прочтения\. Пожалуйста, предоставьте текст заметки\.?/gi
+        ];
+
+        for (const phrase of junkPhrases) {
+            cleaned = cleaned.replace(phrase, '');
+        }
+
+        // 3. Убираем лишние пустые строки
+        cleaned = cleaned.replace(/\n\s*\n/g, '\n').trim();
+
+        return cleaned || '[Текст заметки пуст]';
     }
 }

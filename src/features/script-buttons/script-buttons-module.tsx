@@ -5,6 +5,7 @@ import { ButtonRenderer } from './ButtonRenderer';
 import { parseYaml, Notice } from 'obsidian';
 import { h, render } from 'preact';
 import { GroqService } from '../ai-chat/groq-service';
+import { AiChatModule } from '../ai-chat/ai-chat-module';
 
 export class ScriptButtonsModule implements PluginModule {
     id = 'script-buttons';
@@ -13,11 +14,13 @@ export class ScriptButtonsModule implements PluginModule {
     private runner: ActionRunner;
 
     constructor(private plugin: ObsidianMaker) {
-        const groqService = new GroqService(this.plugin.settings.aiChat, this.plugin.app);
-        this.runner = new ActionRunner(this.plugin.app, groqService);
+        // Runner будет инициализирован в register, когда другие модули загружены
     }
 
     register(): void {
+        const aiChatModule = this.plugin.modules.get('ai-chat') as AiChatModule;
+        const groqService = aiChatModule?.groqService;
+        this.runner = new ActionRunner(this.plugin.app, groqService);
         // Регистрация кастомного блока кода `om-button`
         this.plugin.registerMarkdownCodeBlockProcessor('om-button', (source, el, ctx) => {
             try {

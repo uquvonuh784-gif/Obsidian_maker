@@ -13,7 +13,7 @@ export class AiChatModule implements PluginModule {
     name = 'AI Chat';
 
     private plugin: ObsidianMaker;
-    private groqService: GroqService;
+    public groqService: GroqService;
     private vaultService: VaultService;
 
     constructor(plugin: ObsidianMaker) {

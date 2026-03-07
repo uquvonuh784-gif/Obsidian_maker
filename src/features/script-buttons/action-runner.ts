@@ -39,7 +39,7 @@ export class ActionRunner {
         }
     }
 
-    private applyVariables(text: string, currentFileTitle: string): string {
+    private async applyVariables(text: string, currentFileTitle: string): Promise<string> {
         if (!text) return '';
         const now = new Date();
         const pad = (n: number) => n.toString().padStart(2, '0');
@@ -48,12 +48,67 @@ export class ActionRunner {
         const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
         const vaultName = this.app.vault.getName();
 
-        return text
+        let result = text
             .replace(/{{date}}/g, dateStr)
             .replace(/{{time}}/g, timeStr)
             .replace(/{{datetime}}/g, `${dateStr} ${timeStr}`)
             .replace(/{{title}}/g, currentFileTitle)
             .replace(/{{vault}}/g, vaultName);
+
+        // 1. Сначала резолвим переменные заметок {{note:path:instruction}}
+        // Синтаксис: {{note:Path/To/File:все|первые 100 символов|без тегов}} - пока упростим до {{note:Path}}
+        const noteRegex = /{{note:([^}]+)}}/g;
+        let noteMatch;
+        while ((noteMatch = noteRegex.exec(result)) !== null) {
+            const path = noteMatch[1] || '';
+            const fullPath = path.endsWith('.md') ? path : `${path}.md`;
+            const file = this.app.vault.getAbstractFileByPath(fullPath);
+            if (file instanceof TFile) {
+                const content = await this.app.vault.read(file);
+                result = result.replace(noteMatch[0], content);
+            } else {
+                result = result.replace(noteMatch[0], `[Ошибка: Файл ${path} не найден]`);
+            }
+        }
+
+        // 2. Затем резолвим AI плейсхолдеры {{ai:instruction}}
+        if (result.includes('{{ai:')) {
+            result = await this.resolveAiPlaceholders(result);
+        }
+
+        return result;
+    }
+
+    private async resolveAiPlaceholders(text: string): Promise<string> {
+        if (!this.groqService) return text.replace(/{{ai:[^}]+}}/g, '[Ошибка: GroqService не активен]');
+
+        const aiRegex = /{{ai:([^}]+)}}/g;
+        let processedText = text;
+
+        const matches = Array.from(text.matchAll(aiRegex));
+
+        for (const m of matches) {
+            const prompt = m[1] || '';
+            try {
+                new Notice(`AI генерирует: ${prompt.substring(0, 20)}...`);
+                const response = await this.groqService.chat([{
+                    id: Date.now().toString(),
+                    role: 'user',
+                    content: prompt,
+                    timestamp: Date.now()
+                }], {
+                    includeContext: true,
+                    systemPromptOverride: 'Ты — помощник по заполнению шаблонов в Obsidian. Выполни инструкцию, используя контекст заметки. Верни ТОЛЬКО чистый результат выполнения (например, только дату, только теги или только текст). Категорически запрещено добавлять пояснения, вступления или повторять системный текст.'
+                });
+
+                processedText = processedText.replace(m[0], response.trim());
+            } catch (e: any) {
+                console.error('[Obsidian Maker] AI Template Error', e);
+                processedText = processedText.replace(m[0], `[Ошибка AI: ${e?.message || 'Неизвестная ошибка'}]`);
+            }
+        }
+
+        return processedText;
     }
 
     private getActiveTitle(): string {
@@ -67,9 +122,9 @@ export class ActionRunner {
 
         const activeTitle = this.getActiveTitle();
 
-        filename = this.applyVariables(filename, activeTitle);
-        if (folder) folder = this.applyVariables(folder, activeTitle);
-        if (content) content = this.applyVariables(content, activeTitle);
+        filename = await this.applyVariables(filename, activeTitle);
+        if (folder) folder = await this.applyVariables(folder, activeTitle);
+        if (content) content = await this.applyVariables(content, activeTitle);
 
         let path = folder ? `${folder}/${filename}.md` : `${filename}.md`;
 
@@ -91,7 +146,7 @@ export class ActionRunner {
             const tFile = this.app.vault.getAbstractFileByPath(templatePath);
             if (tFile && tFile instanceof TFile) {
                 const templData = await this.app.vault.read(tFile);
-                finalContent = this.applyVariables(templData, activeTitle);
+                finalContent = await this.applyVariables(templData, activeTitle);
             } else {
                 throw new Error('Шаблон не найден');
             }
@@ -109,7 +164,7 @@ export class ActionRunner {
         const { path: rawPath, newTab = false } = config;
         if (!rawPath) throw new Error('Параметр path обязателен для open-note');
 
-        const path = this.applyVariables(rawPath, this.getActiveTitle());
+        const path = await this.applyVariables(rawPath, this.getActiveTitle());
         const fullPath = path.endsWith('.md') ? path : `${path}.md`;
         const file = this.app.vault.getAbstractFileByPath(fullPath);
 
@@ -136,7 +191,7 @@ export class ActionRunner {
 
         const activeTitle = this.getActiveTitle();
         const templateData = await this.app.vault.read(tFile);
-        const contentToInsert = this.applyVariables(templateData, activeTitle);
+        const contentToInsert = await this.applyVariables(templateData, activeTitle);
 
         const editor = activeView.editor;
         if (position === 'start') {
@@ -156,8 +211,8 @@ export class ActionRunner {
         if (!path || !content) throw new Error('Параметры path и content обязательны для append-to-note');
 
         const activeTitle = this.getActiveTitle();
-        path = this.applyVariables(path, activeTitle);
-        content = this.applyVariables(content, activeTitle);
+        path = await this.applyVariables(path, activeTitle);
+        content = await this.applyVariables(content, activeTitle);
 
         const fullPath = path.endsWith('.md') ? path : `${path}.md`;
         let file = this.app.vault.getAbstractFileByPath(fullPath);
@@ -198,7 +253,7 @@ export class ActionRunner {
         const { url } = config;
         if (!url) throw new Error('Параметр url обязателен для open-url');
 
-        const parsedUrl = this.applyVariables(url, this.getActiveTitle());
+        const parsedUrl = await this.applyVariables(url, this.getActiveTitle());
         window.open(parsedUrl);
     }
 
@@ -211,37 +266,38 @@ export class ActionRunner {
         }
 
         const activeTitle = this.getActiveTitle();
-        const finalPrompt = this.applyVariables(prompt, activeTitle);
+        const finalPrompt = await this.applyVariables(prompt, activeTitle);
 
         new Notice('AI думает...');
 
-        // Отправляем запрос
+        // Отправляем запрос с включенным контекстом
         const aiResponse = await this.groqService.chat([{
             id: Date.now().toString(),
             role: 'user',
             content: finalPrompt,
             timestamp: Date.now()
         }], {
-            includeContext: false,
-            systemPromptOverride: 'Ты полезный ИИ-ассистент, встроенный в текстовый редактор Markdown. Отвечай кратко, по делу и всегда выполняй запрошенное действие без объяснений.'
+            includeContext: true,
+            systemPromptOverride: 'Ты полезный ИИ-помощник в Obsidian. Выполни инструкцию пользователя, используя предоставленный контекст заметки. Верни ТОЛЬКО чистый результат (например, сами теги или саммари). Категорически запрещено повторять системный текст, добавлять пояснения или вступления.'
         });
 
         // Пытаемся вставить ответ в активную заметку
         const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
         if (activeView) {
             const editor = activeView.editor;
+            const response = aiResponse.trim();
+
             if (position === 'start') {
-                editor.replaceRange(aiResponse + '\n\n', { line: 0, ch: 0 });
+                editor.replaceRange(response + '\n\n', { line: 0, ch: 0 });
             } else if (position === 'end') {
                 const lastLine = editor.lastLine();
                 const lastLineLen = editor.getLine(lastLine).length;
-                editor.replaceRange('\n\n' + aiResponse, { line: lastLine, ch: lastLineLen });
+                editor.replaceRange('\n\n' + response, { line: lastLine, ch: lastLineLen });
             } else {
-                editor.replaceSelection(aiResponse);
+                editor.replaceSelection(response);
             }
             new Notice('Ответ AI добавлен в заметку');
         } else {
-            // Если нет активного редактора, просто показываем тост
             new Notice('Ответ AI:\n' + aiResponse, 10000);
         }
     }
