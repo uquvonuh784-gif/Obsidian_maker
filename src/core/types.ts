@@ -2,39 +2,30 @@
  * Core type definitions for Obsidian Maker
  */
 
-// ============ TASKS ============
+// ============ SCRIPT BUTTONS ============
 
-export interface Task {
-    id: string;
-    title: string;
-    description: string;
-    done: boolean;
-    tags: string[];
-    column: string;         // ID колонки на канбан-доске
-    createdAt: number;      // timestamp
-    updatedAt: number;      // timestamp
-    deadline?: number;      // timestamp (опционально)
-    subtasks: SubTask[];
-    reward?: number;        // очки награды
-}
+export type ButtonColor = 'default' | 'primary' | 'success' | 'warning' | 'danger';
+export type ButtonStyle = 'filled' | 'outline' | 'ghost';
 
-export interface SubTask {
-    id: string;
-    title: string;
-    done: boolean;
-}
+export interface ButtonConfig {
+    label: string;
+    action: string;
+    icon?: string;
+    color?: ButtonColor;
+    style?: ButtonStyle;
 
-// ============ BOARD ============
-
-export interface BoardColumn {
-    id: string;
-    name: string;
-    taskIds: string[];
-}
-
-export interface BoardState {
-    columns: BoardColumn[];
-    tasks: Record<string, Task>;
+    // Action-specific parameters
+    filename?: string;
+    folder?: string;
+    content?: string;
+    template?: string;
+    open?: boolean;
+    path?: string;
+    newTab?: boolean;
+    position?: 'start' | 'end' | 'cursor';
+    command?: string;
+    url?: string;
+    prompt?: string;
 }
 
 // ============ AI CHAT ============

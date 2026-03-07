@@ -262,3 +262,147 @@
 .om-settings-textarea-wide {
   width: 100%;
 }
+
+/* ============================================
+   SCRIPT BUTTONS (Фаза 3)
+   ============================================ */
+
+.om-script-btn-container {
+  display: inline-block;
+  margin: var(--size-4-1) 0;
+}
+
+.om-script-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--size-4-2) var(--size-4-4);
+  border-radius: var(--radius-s);
+  font-family: var(--font-interface);
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 150ms ease;
+  min-height: 32px;
+  line-height: normal;
+  border: 1px solid transparent;
+}
+
+.om-script-btn:active {
+  transform: scale(0.97);
+}
+
+.om-script-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.om-script-btn__content {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+}
+
+.om-script-btn__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.om-script-btn__spinner {
+  animation: om-spin 1s linear infinite;
+}
+
+@keyframes om-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Colors (Filled style default) --- */
+.om-script-btn--style-filled.om-script-btn--color-default {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+  border-color: var(--background-modifier-border);
+}
+
+.om-script-btn--style-filled.om-script-btn--color-default:hover {
+  background-color: var(--background-modifier-hover-hover);
+}
+
+.om-script-btn--style-filled.om-script-btn--color-primary {
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.om-script-btn--style-filled.om-script-btn--color-primary:hover {
+  background-color: var(--interactive-accent-hover);
+}
+
+.om-script-btn--style-filled.om-script-btn--color-success {
+  background-color: var(--color-green);
+  color: var(--text-on-accent);
+}
+
+.om-script-btn--style-filled.om-script-btn--color-warning {
+  background-color: var(--color-orange);
+  color: var(--text-on-accent);
+}
+
+.om-script-btn--style-filled.om-script-btn--color-danger {
+  background-color: var(--text-error);
+  color: var(--text-on-accent);
+}
+
+/* --- Colors (Outline style) --- */
+.om-script-btn--style-outline {
+  background-color: transparent;
+}
+
+.om-script-btn--style-outline.om-script-btn--color-default {
+  border-color: var(--background-modifier-border);
+  color: var(--text-normal);
+}
+
+.om-script-btn--style-outline.om-script-btn--color-primary {
+  border-color: var(--interactive-accent);
+  color: var(--interactive-accent);
+}
+
+.om-script-btn--style-outline.om-script-btn--color-success {
+  border-color: var(--color-green);
+  color: var(--color-green);
+}
+
+/* --- Colors (Ghost style) --- */
+.om-script-btn--style-ghost {
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.om-script-btn--style-ghost.om-script-btn--color-default {
+  color: var(--text-normal);
+}
+
+.om-script-btn--style-ghost.om-script-btn--color-primary {
+  color: var(--interactive-accent);
+}
+
+.om-script-btn--style-ghost:hover,
+.om-script-btn--style-outline:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.om-error-text {
+  color: var(--text-error);
+  font-size: var(--font-ui-small);
+  background-color: rgba(255, 0, 0, 0.1);
+  padding: var(--size-4-1) var(--size-4-2);
+  border-radius: var(--radius-s);
+  border: 1px solid rgba(255, 0, 0, 0.2);
+}

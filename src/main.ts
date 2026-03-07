@@ -6,6 +6,7 @@ import {
 	ObsidianMakerSettingTab,
 } from './core/settings';
 import { AiChatModule } from './features/ai-chat';
+import { ScriptButtonsModule } from './features/script-buttons';
 
 export default class ObsidianMaker extends Plugin {
 	settings: ObsidianMakerSettings;
@@ -20,6 +21,7 @@ export default class ObsidianMaker extends Plugin {
 
 		// 3. Регистрация feature-модулей
 		this.modules.add(new AiChatModule(this));
+		this.modules.add(new ScriptButtonsModule(this));
 
 		// 4. Загрузка всех модулей
 		await this.modules.loadAll();
