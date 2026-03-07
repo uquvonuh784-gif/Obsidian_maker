@@ -1,0 +1,9 @@
+{
+	"id": "obsidian-maker",
+	"name": "Obsidian Maker",
+	"version": "0.1.0",
+	"minAppVersion": "0.15.0",
+	"description": "Modular all-in-one plugin: AI chat, task board, smart editor tools",
+	"author": "Bykovskiy",
+	"isDesktopOnly": false
+}

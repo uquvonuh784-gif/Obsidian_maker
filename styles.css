@@ -1,0 +1,264 @@
+/* ============================================
+   Obsidian Maker — Стили плагина
+   Префикс: om-
+   Используем CSS-переменные Obsidian
+   ============================================ */
+
+/* ===== CHAT VIEW ROOT ===== */
+.om-chat-view-root {
+  padding: 0 !important;
+}
+
+/* ===== CHAT CONTAINER ===== */
+.om-chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-family: var(--font-interface);
+}
+
+/* ===== CHAT HEADER ===== */
+.om-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--size-4-2) var(--size-4-4);
+  border-bottom: 1px solid var(--background-modifier-border);
+  background-color: var(--background-secondary);
+}
+
+.om-chat-header__title {
+  font-weight: 600;
+  font-size: var(--font-ui-medium);
+  color: var(--text-normal);
+}
+
+.om-chat-header__clear {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--size-4-1);
+  border-radius: var(--radius-s);
+  font-size: 14px;
+  line-height: 1;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.om-chat-header__clear:hover {
+  color: var(--text-normal);
+  background-color: var(--background-modifier-hover);
+}
+
+/* ===== MESSAGES AREA ===== */
+.om-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--size-4-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+}
+
+/* ===== EMPTY STATE ===== */
+.om-chat-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: var(--size-4-3);
+  color: var(--text-muted);
+}
+
+.om-chat-empty__icon {
+  font-size: 48px;
+  opacity: 0.5;
+}
+
+.om-chat-empty__text {
+  text-align: center;
+  font-size: var(--font-ui-small);
+  max-width: 220px;
+  line-height: 1.5;
+}
+
+/* ===== CHAT BUBBLES ===== */
+.om-chat-bubble {
+  padding: var(--size-4-2) var(--size-4-3);
+  border-radius: var(--radius-l);
+  max-width: 85%;
+  animation: om-fade-in 200ms ease;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.om-chat-bubble--user {
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  margin-left: auto;
+  border-bottom-right-radius: var(--radius-s);
+}
+
+.om-chat-bubble--assistant {
+  background-color: var(--background-secondary);
+  color: var(--text-normal);
+  margin-right: auto;
+  border-bottom-left-radius: var(--radius-s);
+  border: 1px solid var(--background-modifier-border);
+}
+
+.om-chat-bubble__content {
+  font-size: var(--font-ui-small);
+  line-height: 1.5;
+}
+
+.om-chat-bubble__time {
+  font-size: 10px;
+  color: var(--text-faint);
+  margin-top: var(--size-4-1);
+  text-align: right;
+  opacity: 0.7;
+}
+
+.om-chat-bubble--user .om-chat-bubble__time {
+  color: var(--text-on-accent);
+  opacity: 0.6;
+}
+
+/* ===== TYPING INDICATOR ===== */
+.om-chat-bubble--loading {
+  padding: var(--size-4-3);
+}
+
+.om-chat-typing {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.om-chat-typing__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+  animation: om-typing-bounce 1.4s infinite ease-in-out;
+}
+
+.om-chat-typing__dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.om-chat-typing__dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes om-typing-bounce {
+
+  0%,
+  80%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ===== ERROR MESSAGE ===== */
+.om-chat-error {
+  padding: var(--size-4-2) var(--size-4-3);
+  background-color: rgba(255, 100, 100, 0.1);
+  border: 1px solid rgba(255, 100, 100, 0.3);
+  border-radius: var(--radius-m);
+  color: var(--text-error);
+  font-size: var(--font-ui-small);
+  animation: om-fade-in 200ms ease;
+}
+
+/* ===== INPUT AREA ===== */
+.om-chat-input-area {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--size-4-2);
+  padding: var(--size-4-3);
+  border-top: 1px solid var(--background-modifier-border);
+  background-color: var(--background-primary);
+}
+
+.om-chat-input {
+  flex: 1;
+  padding: var(--size-4-2) var(--size-4-3);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background-color: var(--background-modifier-form-field);
+  color: var(--text-normal);
+  font-family: var(--font-interface);
+  font-size: var(--font-ui-small);
+  resize: none;
+  min-height: 36px;
+  max-height: 120px;
+  line-height: 1.4;
+  transition: border-color 150ms ease;
+}
+
+.om-chat-input:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+}
+
+.om-chat-input:disabled {
+  opacity: 0.6;
+}
+
+/* ===== SEND BUTTON ===== */
+.om-chat-send-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--radius-m);
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  cursor: pointer;
+  font-size: 16px;
+  flex-shrink: 0;
+  transition: background-color 150ms ease, transform 100ms ease;
+}
+
+.om-chat-send-btn:hover:not(:disabled) {
+  background-color: var(--interactive-accent-hover);
+}
+
+.om-chat-send-btn:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.om-chat-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes om-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== SETTINGS ===== */
+.om-settings-textarea-wide {
+  width: 100%;
+}
