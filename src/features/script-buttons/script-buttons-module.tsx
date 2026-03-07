@@ -4,6 +4,7 @@ import { ActionRunner } from './action-runner';
 import { ButtonRenderer } from './ButtonRenderer';
 import { parseYaml, Notice } from 'obsidian';
 import { h, render } from 'preact';
+import { GroqService } from '../ai-chat/groq-service';
 
 export class ScriptButtonsModule implements PluginModule {
     id = 'script-buttons';
@@ -12,7 +13,8 @@ export class ScriptButtonsModule implements PluginModule {
     private runner: ActionRunner;
 
     constructor(private plugin: ObsidianMaker) {
-        this.runner = new ActionRunner(this.plugin.app);
+        const groqService = new GroqService(this.plugin.settings.aiChat, this.plugin.app);
+        this.runner = new ActionRunner(this.plugin.app, groqService);
     }
 
     register(): void {
@@ -40,18 +42,18 @@ export class ScriptButtonsModule implements PluginModule {
                     e.stopPropagation();
 
                     // Показываем загрузку (если нужно)
-                    render(<ButtonRenderer config={ config as ButtonConfig } onClick = { handleClick } isLoading = { true} />, container);
+                    render(<ButtonRenderer config={config as ButtonConfig} onClick={handleClick} isLoading={true} />, container);
 
                     try {
                         await this.runner.execute(config as ButtonConfig, ctx.sourcePath);
                     } finally {
                         // Возвращаем в нормальное состояние
-                        render(<ButtonRenderer config={ config as ButtonConfig } onClick = { handleClick } isLoading = { false} />, container);
+                        render(<ButtonRenderer config={config as ButtonConfig} onClick={handleClick} isLoading={false} />, container);
                     }
                 };
 
                 // Начальный рендер
-                render(<ButtonRenderer config={ config as ButtonConfig } onClick = { handleClick } isLoading = { false} />, container);
+                render(<ButtonRenderer config={config as ButtonConfig} onClick={handleClick} isLoading={false} />, container);
 
             } catch (e) {
                 console.error('[Obsidian Maker] Button parsing error', e);

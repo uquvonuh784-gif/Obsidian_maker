@@ -1,8 +1,9 @@
 import { App, Notice, TFile, MarkdownView } from 'obsidian';
 import { ButtonConfig } from '../../core/types';
+import { GroqService } from '../ai-chat/groq-service';
 
 export class ActionRunner {
-    constructor(private app: App) { }
+    constructor(private app: App, private groqService?: GroqService) { }
 
     async execute(config: ButtonConfig, currentFilePath: string) {
         const action = config.action;
@@ -27,7 +28,7 @@ export class ActionRunner {
                     await this.appendToNote(config);
                     break;
                 case 'ai-prompt':
-                    new Notice('AI prompt action: Будет реализовано в Фазе 4.');
+                    await this.aiPrompt(config);
                     break;
                 default:
                     new Notice(`Неизвестное действие: ${action}`);
@@ -199,5 +200,46 @@ export class ActionRunner {
 
         const parsedUrl = this.applyVariables(url, this.getActiveTitle());
         window.open(parsedUrl);
+    }
+
+    private async aiPrompt(config: ButtonConfig) {
+        const { prompt, position = 'cursor' } = config;
+        if (!prompt) throw new Error('Параметр prompt обязателен для ai-prompt');
+
+        if (!this.groqService) {
+            throw new Error('GroqService не инициализирован для ActionRunner');
+        }
+
+        const activeTitle = this.getActiveTitle();
+        const finalPrompt = this.applyVariables(prompt, activeTitle);
+
+        new Notice('AI думает...');
+
+        // Отправляем запрос (GroqService сам добавит контент активной заметки в контекст, если она открыта)
+        const aiResponse = await this.groqService.chat([{
+            id: Date.now().toString(),
+            role: 'user',
+            content: finalPrompt,
+            timestamp: Date.now()
+        }]);
+
+        // Пытаемся вставить ответ в активную заметку
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (activeView) {
+            const editor = activeView.editor;
+            if (position === 'start') {
+                editor.replaceRange(aiResponse + '\n\n', { line: 0, ch: 0 });
+            } else if (position === 'end') {
+                const lastLine = editor.lastLine();
+                const lastLineLen = editor.getLine(lastLine).length;
+                editor.replaceRange('\n\n' + aiResponse, { line: lastLine, ch: lastLineLen });
+            } else {
+                editor.replaceSelection(aiResponse);
+            }
+            new Notice('Ответ AI добавлен в заметку');
+        } else {
+            // Если нет активного редактора, просто показываем тост
+            new Notice('Ответ AI:\n' + aiResponse, 10000);
+        }
     }
 }

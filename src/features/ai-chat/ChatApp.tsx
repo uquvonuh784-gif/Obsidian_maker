@@ -2,16 +2,22 @@ import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 import type { ChatMessage } from '../../core/types';
 import type { GroqService } from './groq-service';
 import { generateId } from '../../utils/debounce';
+import type { VaultService } from './vault-service';
+import { AiActionParser, AiParsedAction } from './action-parser';
+import { AiActionCard } from './AiActionCard';
 
 interface ChatAppProps {
     groqService: GroqService;
+    vaultService: VaultService;
 }
 
-export function ChatApp({ groqService }: ChatAppProps) {
+export function ChatApp({ groqService, vaultService }: ChatAppProps) {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [actionStatuses, setActionStatuses] = useState<Record<string, 'pending' | 'executing' | 'success' | 'error'>>({});
+    const [actionErrors, setActionErrors] = useState<Record<string, string>>({});
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -65,6 +71,77 @@ export function ChatApp({ groqService }: ChatAppProps) {
         }
     }, [input, messages, isLoading, groqService]);
 
+    const executeAction = useCallback(async (msgId: string, action: AiParsedAction) => {
+        setActionStatuses(prev => ({ ...prev, [msgId]: 'executing' }));
+
+        try {
+            let resultText = '';
+
+            if (action.action === 'create-note' && action.path && action.content) {
+                await vaultService.createOrOverwriteNote(action.path, action.content);
+                resultText = `Заметка "${action.path}" успешно создана.`;
+            } else if (action.action === 'append-to-note' && action.path && action.content) {
+                await vaultService.appendToNote(action.path, action.content);
+                resultText = `Текст успешно добавлен в заметку "${action.path}".`;
+            } else if (action.action === 'read-note' && action.path) {
+                const content = await vaultService.readNote(action.path);
+                resultText = `[Системное сообщение] Содержимое заметки "${action.path}":\n\n${content}`;
+            } else if (action.action === 'search-notes' && action.query) {
+                const results = vaultService.searchNotes(action.query);
+                if (results.length > 0) {
+                    resultText = `[Системное сообщение] Найдены следующие заметки по запросу "${action.query}":\n- ${results.join('\n- ')}`;
+                } else {
+                    resultText = `[Системное сообщение] По запросу "${action.query}" ничего не найдено.`;
+                }
+            } else {
+                throw new Error('Некорректные параметры команды');
+            }
+
+            setActionStatuses(prev => ({ ...prev, [msgId]: 'success' }));
+
+            // Если это чтение или поиск, скармливаем результат обратно ИИ автоматически
+            if (action.action === 'read-note' || action.action === 'search-notes') {
+                const sysMessage: ChatMessage = {
+                    id: generateId(),
+                    role: 'system',
+                    content: resultText,
+                    timestamp: Date.now()
+                };
+
+                const newMessages = [...messages, sysMessage];
+                setMessages(newMessages);
+                setIsLoading(true);
+
+                try {
+                    const response = await groqService.chat(newMessages);
+                    const aiMessage: ChatMessage = {
+                        id: generateId(),
+                        role: 'assistant',
+                        content: response,
+                        timestamp: Date.now(),
+                    };
+                    setMessages(prev => [...prev, aiMessage]);
+                } catch (err) {
+                    setError(err instanceof Error ? err.message : 'Unknown error');
+                } finally {
+                    setIsLoading(false);
+                    setTimeout(() => inputRef.current?.focus(), 50);
+                }
+            }
+
+        } catch (err) {
+            console.error('[Obsidian Maker] Action exec error', err);
+            const errStr = err instanceof Error ? err.message : 'Unknown error';
+            setActionStatuses(prev => ({ ...prev, [msgId]: 'error' }));
+            setActionErrors(prev => ({ ...prev, [msgId]: errStr }));
+        }
+    }, [messages, vaultService, groqService, inputRef]);
+
+    const rejectAction = useCallback((msgId: string) => {
+        setActionStatuses(prev => ({ ...prev, [msgId]: 'error' }));
+        setActionErrors(prev => ({ ...prev, [msgId]: 'Отклонено пользователем' }));
+    }, []);
+
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -102,22 +179,56 @@ export function ChatApp({ groqService }: ChatAppProps) {
                     </div>
                 )}
 
-                {messages.map(msg => (
-                    <div
-                        key={msg.id}
-                        class={`om-chat-bubble om-chat-bubble--${msg.role}`}
-                    >
-                        <div class="om-chat-bubble__content">
-                            {msg.content}
+                {messages.map(msg => {
+                    let textToRender = msg.content;
+                    let parsedAction = null;
+
+                    if (msg.role === 'assistant') {
+                        parsedAction = AiActionParser.parse(msg.content);
+                        if (parsedAction && parsedAction.rawJson) {
+                            textToRender = AiActionParser.stripAction(msg.content, parsedAction.rawJson);
+                        }
+                    }
+
+                    // System сообщения (тихо прячем от пользователя, если они чисто технические, или стилизуем по другому)
+                    if (msg.role === 'system' && textToRender.startsWith('[Системное сообщение]')) {
+                        return (
+                            <div key={msg.id} class="om-chat-system-msg">
+                                {textToRender.length > 100 ? textToRender.substring(0, 100) + '...' : textToRender}
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <div
+                            key={msg.id}
+                            class={`om-chat-bubble om-chat-bubble--${msg.role}`}
+                        >
+                            <div class="om-chat-bubble__content">
+                                {textToRender}
+                            </div>
+
+                            {parsedAction && (
+                                <div class="om-chat-bubble__action">
+                                    <AiActionCard
+                                        action={parsedAction}
+                                        status={actionStatuses[msg.id] || 'pending'}
+                                        errorText={actionErrors[msg.id]}
+                                        onConfirm={() => void executeAction(msg.id, parsedAction as AiParsedAction)}
+                                        onReject={() => rejectAction(msg.id)}
+                                    />
+                                </div>
+                            )}
+
+                            <div class="om-chat-bubble__time">
+                                {new Date(msg.timestamp).toLocaleTimeString([], {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                })}
+                            </div>
                         </div>
-                        <div class="om-chat-bubble__time">
-                            {new Date(msg.timestamp).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                            })}
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
 
                 {isLoading && (
                     <div class="om-chat-bubble om-chat-bubble--assistant om-chat-bubble--loading">

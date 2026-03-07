@@ -1,5 +1,6 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import type ObsidianMaker from '../main';
+import { DEFAULT_AI_SYSTEM_PROMPT } from '../features/ai-chat/system-prompt';
 
 // ============ INTERFACES ============
 
@@ -31,7 +32,7 @@ export const DEFAULT_SETTINGS: ObsidianMakerSettings = {
         model: 'llama-3.3-70b-versatile',
         maxTokens: 4096,
         temperature: 0.7,
-        systemPrompt: 'You are a helpful AI assistant integrated into Obsidian note-taking app. You help users with their notes, tasks, planning and creative work. Be concise and practical. Respond in the same language the user writes to you.',
+        systemPrompt: DEFAULT_AI_SYSTEM_PROMPT,
     },
     taskBoard: {
         defaultColumns: ['To Do', 'In Progress', 'Done'],
@@ -119,16 +120,23 @@ export class ObsidianMakerSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('System prompt')
-            .setDesc('Instructions for the AI assistant')
+            .setDesc('Instructions for the AI assistant (Supports Obsidian Maker functions)')
             .addTextArea(text => text
                 .setValue(this.plugin.settings.aiChat.systemPrompt)
                 .then(t => {
-                    t.inputEl.rows = 4;
+                    t.inputEl.rows = 8;
                     t.inputEl.addClass('om-settings-textarea-wide');
                 })
                 .onChange(async (value) => {
                     this.plugin.settings.aiChat.systemPrompt = value;
                     await this.plugin.saveSettings();
+                }))
+            .addButton(btn => btn
+                .setButtonText('Reset to Default')
+                .onClick(async () => {
+                    this.plugin.settings.aiChat.systemPrompt = DEFAULT_AI_SYSTEM_PROMPT;
+                    await this.plugin.saveSettings();
+                    this.display(); // Перерисовываем UI
                 }));
 
         // ─── Task Board ───

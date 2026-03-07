@@ -264,6 +264,103 @@
 }
 
 /* ============================================
+   AI ACTION CARD (Фаза 4)
+   ============================================ */
+
+.om-ai-action-card {
+  margin-top: var(--size-4-2);
+  padding: var(--size-4-3);
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  font-family: var(--font-interface);
+}
+
+.om-ai-action-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  color: var(--text-normal);
+  font-weight: 600;
+  margin-bottom: var(--size-4-1);
+}
+
+.om-ai-action-card__icon {
+  color: var(--interactive-accent);
+}
+
+.om-ai-action-card__desc {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  margin-bottom: var(--size-4-3);
+  word-break: break-all;
+}
+
+.om-ai-action-card__actions {
+  display: flex;
+  gap: var(--size-4-2);
+}
+
+.om-ai-action-card__btn {
+  padding: var(--size-4-1) var(--size-4-3);
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-smaller);
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.om-ai-action-card__btn--confirm {
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.om-ai-action-card__btn--confirm:hover {
+  background-color: var(--interactive-accent-hover);
+}
+
+.om-ai-action-card__btn--reject {
+  background-color: transparent;
+  border-color: var(--background-modifier-border);
+  color: var(--text-muted);
+}
+
+.om-ai-action-card__btn--reject:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.om-ai-action-card__status {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-1);
+  font-size: var(--font-ui-smaller);
+  font-weight: 500;
+}
+
+.om-ai-action-card__status--executing {
+  color: var(--text-muted);
+}
+
+.om-ai-action-card__status--success {
+  color: var(--color-green);
+}
+
+.om-ai-action-card__status--error {
+  color: var(--text-error);
+  margin-top: 4px;
+}
+
+.om-chat-system-msg {
+  font-size: 10px;
+  color: var(--text-faint);
+  text-align: center;
+  margin: var(--size-4-1) 0;
+  font-style: italic;
+}
+
+
+/* ============================================
    SCRIPT BUTTONS (Фаза 3)
    ============================================ */
 

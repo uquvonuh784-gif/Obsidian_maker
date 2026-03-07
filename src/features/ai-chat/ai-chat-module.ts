@@ -2,6 +2,7 @@ import type ObsidianMaker from '../../main';
 import type { PluginModule } from '../../core/types';
 import { GroqService } from './groq-service';
 import { AiChatView, AI_CHAT_VIEW_TYPE } from './ai-chat-view';
+import { VaultService } from './vault-service';
 
 /**
  * Модуль AI Чата.
@@ -13,20 +14,23 @@ export class AiChatModule implements PluginModule {
 
     private plugin: ObsidianMaker;
     private groqService: GroqService;
+    private vaultService: VaultService;
 
     constructor(plugin: ObsidianMaker) {
         this.plugin = plugin;
         this.groqService = new GroqService(plugin.settings.aiChat, plugin.app);
+        this.vaultService = new VaultService(plugin.app);
     }
 
     register(): void {
         const plugin = this.plugin;
         const groqService = this.groqService;
+        const vaultService = this.vaultService;
 
         // Регистрируем кастомный View
         plugin.registerView(
             AI_CHAT_VIEW_TYPE,
-            (leaf) => new AiChatView(leaf, groqService)
+            (leaf) => new AiChatView(leaf, groqService, vaultService)
         );
 
         // Команда: открыть AI чат

@@ -2,6 +2,7 @@ import { ItemView, WorkspaceLeaf } from 'obsidian';
 import { render } from 'preact';
 import { ChatApp } from './ChatApp';
 import type { GroqService } from './groq-service';
+import type { VaultService } from './vault-service';
 
 export const AI_CHAT_VIEW_TYPE = 'obsidian-maker-ai-chat';
 
@@ -11,10 +12,12 @@ export const AI_CHAT_VIEW_TYPE = 'obsidian-maker-ai-chat';
  */
 export class AiChatView extends ItemView {
     private groqService: GroqService;
+    private vaultService: VaultService;
 
-    constructor(leaf: WorkspaceLeaf, groqService: GroqService) {
+    constructor(leaf: WorkspaceLeaf, groqService: GroqService, vaultService: VaultService) {
         super(leaf);
         this.groqService = groqService;
+        this.vaultService = vaultService;
     }
 
     getViewType(): string {
@@ -35,7 +38,7 @@ export class AiChatView extends ItemView {
         container.addClass('om-chat-view-root');
 
         render(
-            <ChatApp groqService={this.groqService} />,
+            <ChatApp groqService={this.groqService} vaultService={this.vaultService} />,
             container
         );
     }
