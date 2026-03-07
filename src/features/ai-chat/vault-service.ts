@@ -127,4 +127,17 @@ export class VaultService {
             new Notice('Ошибка при вставке в файл');
         }
     }
+
+    /**
+     * Выполняет команду Obsidian по её ID
+     */
+    executeCommand(id: string): void {
+        // @ts-ignore - исполняем команду Obsidian
+        if (this.app.commands.executeCommandById(id)) {
+            new Notice(`Команда получена: ${id}`);
+        } else {
+            console.warn(`[Obsidian Maker] Command not found: ${id}`);
+            new Notice(`Команда не найдена: ${id}. Проверьте наличие плагина.`);
+        }
+    }
 }

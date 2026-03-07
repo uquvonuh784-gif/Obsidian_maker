@@ -176,13 +176,22 @@ export function ChatApp({ groqService, vaultService }: ChatAppProps) {
             <div class="om-chat-top-panel">
                 <div class="om-chat-header">
                     <span class="om-chat-header__title">Quick Tools</span>
-                    <button
-                        class="om-chat-header__clear"
-                        onClick={clearChat}
-                        title="Clear history"
-                    >
-                        ✕
-                    </button>
+                    <div class="om-chat-header__actions">
+                        <button
+                            class="om-chat-header__sync"
+                            onClick={() => vaultService.executeCommand('obsidian-git:pull-push')}
+                            title="Sync (Obsidian Git)"
+                        >
+                            🔄
+                        </button>
+                        <button
+                            class="om-chat-header__clear"
+                            onClick={clearChat}
+                            title="Clear history"
+                        >
+                            ✕
+                        </button>
+                    </div>
                 </div>
                 <div class="om-chat-quick-actions">
                     {QUICK_ACTIONS.map(action => (
