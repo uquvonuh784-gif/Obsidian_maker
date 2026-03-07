@@ -1,56 +1,71 @@
-# Главный справочник плагина (Project Index)
+# 🗂 Главный справочник плагина (Project Index)
+
+> **Для AI:** Этот документ описывает структуру файлов и архитектуру проекта. 
+> Сверяйся с ним, когда тебе нужно понять, куда положить новый файл.
 
 ## 🎯 Назначение плагина
 
-**Obsidian Maker** — модульный плагин-комбайн для Obsidian, объединяющий:
-- 🤖 AI чат-ассистент (Gemini) для анализа заметок и планирования
-- 📋 Kanban-доска задач с drag-and-drop
-- ✏️ Расширенный редактор задач (fullscreen modal)
-- 🔧 Умные текстовые утилиты
+**Obsidian Maker** — модульный плагин для Obsidian, объединяющий:
+- 🤖 **AI чат-ассистент** (Groq) в боковой панели
+- 🔘 **Кнопки-скрипты** для выполнения предопределённых действий
+- 🧠 **AI + Интеграция с Vault**: AI может читать, создавать и редактировать заметки
+- 🔧 **Умные текстовые утилиты**
 
-## 📂 Архитектура и Файловая структура (карта)
+---
+
+## 📂 Файловая структура
 
 ```
 Obsidian_maker/
 ├── src/
 │   ├── main.ts                  — Точка входа: загрузка настроек + ModuleRegistry
 │   ├── core/
-│   │   ├── types.ts             — Все интерфейсы (Task, ChatMessage, BoardColumn, PluginModule)
-│   │   ├── settings.ts          — Настройки с секциями + вкладка настроек (SettingTab)
+│   │   ├── types.ts             — Все интерфейсы (PluginModule, ChatMessage, и др.)
+│   │   ├── settings.ts          — Настройки с секциями + SettingTab
 │   │   └── module-registry.ts   — Реестр модулей: load/unload lifecycle
 │   ├── features/                — Feature-модули (каждый реализует PluginModule)
-│   │   └── .gitkeep.ts          — (Placeholder, модули будут добавляться)
-│   ├── ui/                      — Общие Preact-компоненты
-│   │   └── .gitkeep.ts          — (Placeholder, компоненты будут добавляться)
+│   │   ├── ai-chat/             — AI чат модуль (Groq api, UI чата, view)
+│   │   └── script-buttons/      — (В разработке: Фаза 3) Кнопки-скрипты
+│   ├── ui/                      — Общие переиспользуемые Preact-компоненты
 │   └── utils/
-│       └── debounce.ts          — debounce, throttle, generateId
+│       └── debounce.ts          — Утилиты (debounce, generateId)
 ├── manifest.json                — Метаданные плагина (id: obsidian-maker)
-├── package.json                 — npm-конфигурация
-├── tsconfig.json                — TypeScript + JSX (Preact)
-├── esbuild.config.mjs           — Bundler config + JSX support
-├── styles.css                   — CSS-стили (om- префикс, CSS-переменные Obsidian)
-├── AI_WORKFLOW.md               — Алгоритм работы AI-ассистента
-├── SESSION.md                   — Текущее состояние проекта
+├── package.json                 — npm-конфигурация (сборка `build`, `dev`, `lint`)
+├── styles.css                   — CSS-стили (все модули, CSS-переменные Obsidian)
+├── AGENTS.md                    — Мастер-индекс документов для AI
+├── SESSION.md                   — Трекер задач, фазы разработки (текущий статус)
+├── BUSINESS_LOGIC.md            — Бизнес-логика, сценарии использования, форматы
+├── CONVENTIONS.md               — Правила кода, архитектурные стандарты проекта
 ├── INDEX.md                     — Этот файл
-├── AGENTS.md                    — Правила от разработчиков Obsidian
 └── .agent/
     ├── skills/SKILL.md          — UI: Preact + CSS-переменные + Lucide
     └── workflows/deploy.md      — Сборка и деплой в тестовый Vault
 ```
 
-### 📖 Когда и куда смотреть:
-1. **Нужно добавить новую фичу?** → Создаём папку в `src/features/`, реализуем `PluginModule`, регистрируем в `main.ts`
-2. **Нужно добавить UI компонент?** → `src/ui/`, используем `.tsx`, следуем SKILL.md
-3. **Нужно добавить настройку?** → `src/core/settings.ts` — добавляем поле + UI в SettingTab
-4. **Нужно добавить тип/интерфейс?** → `src/core/types.ts`
-5. **Нужна утилита?** → `src/utils/`
-6. **Нужно изменить логику работы AI?** → `AI_WORKFLOW.md`
+---
 
-## 🛠 Процессы (Workflow)
-* **Сборка (watch):** `npm run dev`
-* **Итоговый билд:** `npm run build`
-* **Линтинг:** `npm run lint`
-* **Локальное тестирование:** `/deploy` workflow — копируем в `.obsidian/plugins/obsidian-maker/`
+## 📖 Куда и что добавлять
+
+1. **Новая фича (например, кнопки-скрипты)?**
+   - Создаём папку в `src/features/<feature-name>/`
+   - Пишем логику, UI (если нужен)
+   - Создаём класс `FeatureModule` реализующий `PluginModule`
+   - Добавляем его в `this.modules.add(...)` внутри `main.ts`
+
+2. **Общий UI-компонент (кнопка, модалка, иконка)?**
+   - Кладём в `src/ui/`
+   - Используем файл `.tsx`
+
+3. **Новая настройка плагина?**
+   - Обновляем интерфейсы и `DEFAULT_SETTINGS` в `src/core/settings.ts`
+   - Добавляем контрол (toggle, text) во вкладку `ObsidianMakerSettingTab` в том же файле
+
+4. **Глобальный тип или интерфейс?**
+   - Добавляем в `src/core/types.ts`
+
+5. **Где писать стили?**
+   - Все стили живут в `styles.css`. Блоки стилей разных фич разделяем комментариями.
 
 ---
-> Этот документ — **живой**. Все новые модули и папки должны фиксироваться здесь.
+
+> Этот документ — **живой**. Если в проект добавляется принципиально новая папка или новый документ документации, они должны быть отражены здесь.

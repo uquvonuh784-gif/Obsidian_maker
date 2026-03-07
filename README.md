@@ -1,90 +1,119 @@
-# Obsidian Sample Plugin
+# 🧩 Obsidian Maker
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+**Модульный плагин-комбайн для Obsidian** — объединяет AI-ассистента, управление задачами и умные инструменты для заметок в одном плагине.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## ✨ Возможности
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+### 🤖 AI Чат (Groq)
+- Встроенный чат-ассистент в боковой панели
+- Работает через Groq API (модели LLaMA, Mixtral, Gemma)
+- Настраиваемый системный промпт, температура, макс. токены
+- Отвечает на том же языке, что и пользователь
 
-## First time developing plugins?
+### 📋 Канбан-доска задач *(в разработке)*
+- Визуальная доска с колонками и карточками задач
+- Drag & Drop перетаскивание между колонками
+- Подзадачи, теги, дедлайны, награды
 
-Quick starting guide for new plugin devs:
+### 🔧 Умные утилиты *(планируется)*
+- Расширенный редактор задач
+- Текстовые инструменты
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+## 🏗 Архитектура
 
-## Releasing new releases
+Плагин построен на **модульной архитектуре**:
+- Каждая фича — отдельный модуль, реализующий интерфейс `PluginModule`
+- Модули регистрируются через `ModuleRegistry` и загружаются автоматически
+- UI написан на **Preact** (~3KB) — легковесная альтернатива React
+- Стили используют **CSS-переменные Obsidian** — корректно работают в любой теме
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
-
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
-
-## Adding your plugin to the community plugin list
-
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
-
-## How to use
-
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
-
-## Manually installing the plugin
-
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
-
-## Improve code quality with eslint
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+```
+src/
+├── main.ts                     — Точка входа
+├── core/
+│   ├── types.ts               — Интерфейсы (Task, ChatMessage, PluginModule)
+│   ├── settings.ts            — Настройки + вкладка Settings
+│   └── module-registry.ts     — Реестр модулей
+├── features/
+│   └── ai-chat/               — AI чат модуль (Groq)
+├── ui/                        — Общие Preact-компоненты
+└── utils/
+    └── debounce.ts            — Утилиты (debounce, throttle, generateId)
 ```
 
-If you have multiple URLs, you can also do:
+## 🚀 Установка для разработки
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
+### Требования
+- [Node.js](https://nodejs.org/) v16+
+- [Obsidian](https://obsidian.md/)
+
+### Шаги
+
+1. **Клонируй репозиторий:**
+   ```bash
+   git clone https://github.com/uquvonuh784-gif/Obsidian_maker.git
+   cd Obsidian_maker
+   ```
+
+2. **Установи зависимости:**
+   ```bash
+   npm install
+   ```
+
+3. **Собери плагин:**
+   ```bash
+   npm run build
+   ```
+
+4. **Скопируй файлы в Vault:**
+   ```
+   main.js, manifest.json, styles.css → [Vault]/.obsidian/plugins/obsidian-maker/
+   ```
+
+5. **Включи плагин** в Obsidian: Settings → Community plugins → Obsidian Maker
+
+### Режим разработки
+
+```bash
+npm run dev     # Автоматическая пересборка при изменении файлов
+npm run lint    # Проверка кода ESLint
 ```
 
-## API Documentation
+## ⚙️ Настройка
 
-See https://docs.obsidian.md
+После включения плагина, перейди в **Settings → Obsidian Maker**:
+
+| Настройка | Описание |
+|-----------|----------|
+| **API key** | Ключ Groq API (получить на [console.groq.com](https://console.groq.com)) |
+| **Model** | Модель AI (LLaMA 3.3 70B по умолчанию) |
+| **Temperature** | Креативность ответов (0 = точно, 1 = креативно) |
+| **Max tokens** | Максимум токенов в ответе |
+| **System prompt** | Системная инструкция для AI |
+
+## 📦 Ручная установка плагина
+
+Скопируй 3 файла из корня проекта в папку плагина внутри Vault:
+
+```
+[Vault]/.obsidian/plugins/obsidian-maker/
+├── main.js
+├── manifest.json
+└── styles.css
+```
+
+## 🛠 Технологии
+
+- **TypeScript** — строгая типизация
+- **Preact** — UI-компоненты (~3KB)
+- **esbuild** — быстрая сборка
+- **Obsidian API** — интеграция с приложением
+- **Groq API** — AI-ассистент (через `requestUrl`)
+
+## 👤 Автор
+
+**Bykovskiy**
+
+## 📄 Лицензия
+
+MIT — см. [LICENSE](LICENSE)
