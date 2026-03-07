@@ -1,4 +1,4 @@
-import { App, TFile } from 'obsidian';
+import { App, MarkdownView, Notice, TFile } from 'obsidian';
 
 export class VaultService {
     constructor(private app: App) { }
@@ -81,5 +81,50 @@ export class VaultService {
             .filter(f => f.basename.toLowerCase().includes(lowerQuery) || f.path.toLowerCase().includes(lowerQuery))
             .map(f => f.path)
             .slice(0, 10); // Ограничиваем выдачу, чтобы не забить контекст AI
+    }
+
+    /**
+     * Вставляет текст в активный редактор в конец файла (или в позицию курсора)
+     */
+    insertIntoActiveNote(content: string, position: 'cursor' | 'end' = 'end'): void {
+        // 1. Пробуем найти активное представление (обычно работает)
+        let activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+
+        // 2. Если не нашли (фокус на боковой панели), ищем среди всех вкладок типа 'markdown'
+        if (!activeView) {
+            const leaves = this.app.workspace.getLeavesOfType('markdown');
+            const firstLeaf = leaves[0];
+            if (firstLeaf) {
+                activeView = firstLeaf.view as MarkdownView;
+            }
+        }
+
+        if (!activeView || !activeView.editor) {
+            new Notice('Не удалось найти открытую заметку. Пожалуйста, откройте заметку, в которую хотите вставить текст.');
+            return;
+        }
+
+        const editor = activeView.editor;
+
+        try {
+            if (position === 'end') {
+                const lastLine = editor.lastLine();
+                const lastLineLen = editor.getLine(lastLine).length;
+
+                // Добавляем отступы, если в файле уже есть текст
+                const prefix = editor.getValue().length > 0 ? '\n\n' : '';
+                editor.replaceRange(prefix + content, { line: lastLine, ch: lastLineLen });
+
+                // Прокрутка к новому тексту
+                const newLastLine = editor.lastLine();
+                editor.scrollIntoView({ from: { line: newLastLine, ch: 0 }, to: { line: newLastLine, ch: 0 } });
+            } else {
+                editor.replaceSelection(content);
+            }
+            new Notice('Текст вставлен');
+        } catch (e) {
+            console.error('[Obsidian Maker] Failed to insert text', e);
+            new Notice('Ошибка при вставке в файл');
+        }
     }
 }

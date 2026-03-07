@@ -11,6 +11,14 @@ interface ChatAppProps {
     vaultService: VaultService;
 }
 
+const QUICK_ACTIONS = [
+    { label: '📝 Саммари', prompt: 'Сделай краткое резюме текущей заметки.' },
+    { label: '✨ Исправить', prompt: 'Исправи грамматические и пунктуационные ошибки в тексте заметки, сохранив стиль.' },
+    { label: '🏷 Теги', prompt: 'Предложи 5 релевантных хештегов для этой заметки.' },
+    { label: '❓ Объяснить', prompt: 'Объясни основные идеи этой заметки простыми словами.' },
+    { label: '✅ Задачи', prompt: 'Выдели из текста заметки список конкретных задач (to-do list).' },
+];
+
 export function ChatApp({ groqService, vaultService }: ChatAppProps) {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
@@ -31,36 +39,44 @@ export function ChatApp({ groqService, vaultService }: ChatAppProps) {
         inputRef.current?.focus();
     }, []);
 
-    const sendMessage = useCallback(async () => {
-        const text = input.trim();
+    const sendMessage = useCallback(async (overridePrompt?: string) => {
+        const text = overridePrompt || input.trim();
         if (!text || isLoading) return;
 
         setError(null);
 
-        // Добавляем сообщение пользователя
-        const userMessage: ChatMessage = {
-            id: generateId(),
-            role: 'user',
-            content: text,
-            timestamp: Date.now(),
-        };
+        // Если это НЕ быстрый инструмент, добавляем сообщение пользователя в чат
+        if (!overridePrompt) {
+            const userMessage: ChatMessage = {
+                id: generateId(),
+                role: 'user',
+                content: text,
+                timestamp: Date.now(),
+            };
+            setMessages(prev => [...prev, userMessage]);
+            setInput('');
+        }
 
-        const newMessages = [...messages, userMessage];
-        setMessages(newMessages);
-        setInput('');
         setIsLoading(true);
 
         try {
-            const response = await groqService.chat(newMessages);
+            // Для быстрых инструментов берем текущую историю или пустую, если не хотим смешивать
+            // Но обычно инструменты лучше работают с контекстом текущего чата
+            const response = await groqService.chat(overridePrompt ? [...messages, { id: 'tmp', role: 'user', content: text, timestamp: Date.now() }] : [...messages, { id: generateId(), role: 'user', content: text, timestamp: Date.now() }]);
 
-            const aiMessage: ChatMessage = {
-                id: generateId(),
-                role: 'assistant',
-                content: response,
-                timestamp: Date.now(),
-            };
-
-            setMessages(prev => [...prev, aiMessage]);
+            if (overridePrompt) {
+                // Если это быстрый инструмент — только вставляем в заметку
+                vaultService.insertIntoActiveNote(response);
+            } else {
+                // Если это обычный чат — добавляем ответ ИИ в историю
+                const aiMessage: ChatMessage = {
+                    id: generateId(),
+                    role: 'assistant',
+                    content: response,
+                    timestamp: Date.now(),
+                };
+                setMessages(prev => [...prev, aiMessage]);
+            }
         } catch (err) {
             const errorText = err instanceof Error ? err.message : 'Unknown error';
             setError(errorText);
@@ -69,7 +85,7 @@ export function ChatApp({ groqService, vaultService }: ChatAppProps) {
             // Возвращаем фокус
             setTimeout(() => inputRef.current?.focus(), 50);
         }
-    }, [input, messages, isLoading, groqService]);
+    }, [input, messages, isLoading, groqService, vaultService]);
 
     const executeAction = useCallback(async (msgId: string, action: AiParsedAction) => {
         setActionStatuses(prev => ({ ...prev, [msgId]: 'executing' }));
@@ -156,119 +172,147 @@ export function ChatApp({ groqService, vaultService }: ChatAppProps) {
 
     return (
         <div class="om-chat-container">
-            {/* Header */}
-            <div class="om-chat-header">
-                <span class="om-chat-header__title">AI Chat</span>
-                <button
-                    class="om-chat-header__clear"
-                    onClick={clearChat}
-                    title="Clear chat"
-                >
-                    ✕
-                </button>
+            {/* Top Side: Quick Actions Panel */}
+            <div class="om-chat-top-panel">
+                <div class="om-chat-header">
+                    <span class="om-chat-header__title">Quick Tools</span>
+                    <button
+                        class="om-chat-header__clear"
+                        onClick={clearChat}
+                        title="Clear history"
+                    >
+                        ✕
+                    </button>
+                </div>
+                <div class="om-chat-quick-actions">
+                    {QUICK_ACTIONS.map(action => (
+                        <button
+                            key={action.label}
+                            class="om-chat-quick-btn"
+                            onClick={() => void sendMessage(action.prompt)}
+                            disabled={isLoading}
+                        >
+                            {action.label}
+                        </button>
+                    ))}
+                </div>
             </div>
 
-            {/* Messages area */}
-            <div class="om-chat-messages">
-                {messages.length === 0 && (
-                    <div class="om-chat-empty">
-                        <div class="om-chat-empty__icon">🤖</div>
-                        <div class="om-chat-empty__text">
-                            Ask me anything about your notes, tasks, or ideas!
+            {/* Bottom Side: Dialogue Area */}
+            <div class="om-chat-dialogue-area">
+                <div class="om-chat-messages">
+                    {messages.length === 0 && (
+                        <div class="om-chat-empty">
+                            <div class="om-chat-empty__icon">🤖</div>
+                            <div class="om-chat-empty__text">
+                                Ask me anything about your notes, tasks, or ideas!
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {messages.map(msg => {
-                    let textToRender = msg.content;
-                    let parsedAction = null;
+                    {messages.map(msg => {
+                        let textToRender = msg.content;
+                        let parsedAction = null;
 
-                    if (msg.role === 'assistant') {
-                        parsedAction = AiActionParser.parse(msg.content);
-                        if (parsedAction && parsedAction.rawJson) {
-                            textToRender = AiActionParser.stripAction(msg.content, parsedAction.rawJson);
+                        if (msg.role === 'assistant') {
+                            parsedAction = AiActionParser.parse(msg.content);
+                            if (parsedAction && parsedAction.rawJson) {
+                                textToRender = AiActionParser.stripAction(msg.content, parsedAction.rawJson);
+                            }
                         }
-                    }
 
-                    // System сообщения (тихо прячем от пользователя, если они чисто технические, или стилизуем по другому)
-                    if (msg.role === 'system' && textToRender.startsWith('[Системное сообщение]')) {
+                        // System сообщения
+                        if (msg.role === 'system' && textToRender.startsWith('[Системное сообщение]')) {
+                            return (
+                                <div key={msg.id} class="om-chat-system-msg">
+                                    {textToRender.length > 100 ? textToRender.substring(0, 100) + '...' : textToRender}
+                                </div>
+                            );
+                        }
+
                         return (
-                            <div key={msg.id} class="om-chat-system-msg">
-                                {textToRender.length > 100 ? textToRender.substring(0, 100) + '...' : textToRender}
+                            <div
+                                key={msg.id}
+                                class={`om-chat-bubble om-chat-bubble--${msg.role}`}
+                            >
+                                <div class="om-chat-bubble__content">
+                                    {textToRender}
+                                </div>
+
+                                {msg.role === 'assistant' && !parsedAction && (
+                                    <div class="om-chat-bubble__footer-actions">
+                                        <button
+                                            class="om-chat-bubble__footer-btn"
+                                            onClick={() => vaultService.insertIntoActiveNote(textToRender)}
+                                            title="Insert into note"
+                                        >
+                                            📥 Вставить в заметку
+                                        </button>
+                                    </div>
+                                )}
+
+                                {parsedAction && (
+                                    <div class="om-chat-bubble__action">
+                                        <AiActionCard
+                                            action={parsedAction}
+                                            status={actionStatuses[msg.id] || 'pending'}
+                                            errorText={actionErrors[msg.id]}
+                                            onConfirm={() => void executeAction(msg.id, parsedAction as AiParsedAction)}
+                                            onReject={() => rejectAction(msg.id)}
+                                        />
+                                    </div>
+                                )}
+
+                                <div class="om-chat-bubble__time">
+                                    {new Date(msg.timestamp).toLocaleTimeString([], {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                    })}
+                                </div>
                             </div>
                         );
-                    }
+                    })}
 
-                    return (
-                        <div
-                            key={msg.id}
-                            class={`om-chat-bubble om-chat-bubble--${msg.role}`}
-                        >
-                            <div class="om-chat-bubble__content">
-                                {textToRender}
-                            </div>
-
-                            {parsedAction && (
-                                <div class="om-chat-bubble__action">
-                                    <AiActionCard
-                                        action={parsedAction}
-                                        status={actionStatuses[msg.id] || 'pending'}
-                                        errorText={actionErrors[msg.id]}
-                                        onConfirm={() => void executeAction(msg.id, parsedAction as AiParsedAction)}
-                                        onReject={() => rejectAction(msg.id)}
-                                    />
-                                </div>
-                            )}
-
-                            <div class="om-chat-bubble__time">
-                                {new Date(msg.timestamp).toLocaleTimeString([], {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                })}
+                    {isLoading && (
+                        <div class="om-chat-bubble om-chat-bubble--assistant om-chat-bubble--loading">
+                            <div class="om-chat-typing">
+                                <span class="om-chat-typing__dot"></span>
+                                <span class="om-chat-typing__dot"></span>
+                                <span class="om-chat-typing__dot"></span>
                             </div>
                         </div>
-                    );
-                })}
+                    )}
 
-                {isLoading && (
-                    <div class="om-chat-bubble om-chat-bubble--assistant om-chat-bubble--loading">
-                        <div class="om-chat-typing">
-                            <span class="om-chat-typing__dot"></span>
-                            <span class="om-chat-typing__dot"></span>
-                            <span class="om-chat-typing__dot"></span>
+                    {error && (
+                        <div class="om-chat-error">
+                            ⚠️ {error}
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {error && (
-                    <div class="om-chat-error">
-                        ⚠️ {error}
-                    </div>
-                )}
+                    <div ref={messagesEndRef} />
+                </div>
 
-                <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input area */}
-            <div class="om-chat-input-area">
-                <textarea
-                    ref={inputRef}
-                    class="om-chat-input"
-                    placeholder="Type a message... (Shift+Enter for new line)"
-                    value={input}
-                    onInput={(e) => setInput((e.target as HTMLTextAreaElement).value)}
-                    onKeyDown={handleKeyDown}
-                    rows={1}
-                    disabled={isLoading}
-                />
-                <button
-                    class="om-chat-send-btn"
-                    onClick={() => { void sendMessage(); }}
-                    disabled={isLoading || !input.trim()}
-                    title="Send message"
-                >
-                    {isLoading ? '⏳' : '➤'}
-                </button>
+                {/* Input area */}
+                <div class="om-chat-input-area">
+                    <textarea
+                        ref={inputRef}
+                        class="om-chat-input"
+                        placeholder="Type message..."
+                        value={input}
+                        onInput={(e) => setInput((e.target as HTMLTextAreaElement).value)}
+                        onKeyDown={handleKeyDown}
+                        rows={1}
+                        disabled={isLoading}
+                    />
+                    <button
+                        class="om-chat-send-btn"
+                        onClick={() => { void sendMessage(); }}
+                        disabled={isLoading || !input.trim()}
+                        title="Send"
+                    >
+                        {isLoading ? '⏳' : '➤'}
+                    </button>
+                </div>
             </div>
         </div>
     );
