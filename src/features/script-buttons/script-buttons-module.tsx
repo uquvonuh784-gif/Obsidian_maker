@@ -28,8 +28,7 @@ export class ScriptButtonsModule implements PluginModule {
 
                 // Валидация
                 if (!config.label) {
-                    el.createEl('span', { text: '[Obsidian Maker] Ошибка: параметр label обязателен', cls: 'om-error-text' });
-                    return;
+                    config.label = config.action || 'Button';
                 }
                 if (!config.action) {
                     el.createEl('span', { text: '[Obsidian Maker] Ошибка: параметр action обязателен', cls: 'om-error-text' });

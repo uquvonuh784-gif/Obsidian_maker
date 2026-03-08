@@ -1,7 +1,7 @@
 import { App, MarkdownView, Notice, TFile } from 'obsidian';
 
 export class VaultService {
-    constructor(private app: App) { }
+    constructor(public app: App) { }
 
     /**
      * Читает содержимое заметки по пути

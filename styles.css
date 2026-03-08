@@ -85,14 +85,14 @@
 
 /* ===== QUICK ACTIONS ===== */
 .om-chat-quick-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--size-4-2);
   padding: 0 var(--size-4-4) var(--size-4-4) var(--size-4-4);
 }
 
 .om-chat-quick-btn {
-  padding: var(--size-4-1) var(--size-4-3);
+  padding: var(--size-4-2);
   background-color: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-m);
@@ -102,6 +102,9 @@
   cursor: pointer;
   transition: all 150ms ease;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
 }
 
 .om-chat-quick-btn:hover:not(:disabled) {
@@ -587,6 +590,118 @@
 .om-script-btn--style-ghost:hover,
 .om-script-btn--style-outline:hover {
   background-color: var(--background-modifier-hover);
+}
+
+/* --- Colors (Glass style) --- */
+.om-script-btn--style-glass {
+  position: relative;
+  overflow: hidden;
+  background-color: color-mix(in srgb, var(--text-normal) 3%, transparent);
+  background-image: linear-gradient(145deg, color-mix(in srgb, var(--text-normal) 5%, transparent) 0%, transparent 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid color-mix(in srgb, var(--text-normal) 10%, transparent);
+  color: var(--text-normal);
+  border-radius: var(--radius-l);
+  box-shadow:
+    inset 0 1px 1px color-mix(in srgb, var(--text-normal) 10%, transparent),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.2),
+    0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  padding: var(--size-4-2) var(--size-4-5);
+}
+
+.om-script-btn--style-glass:hover {
+  background-color: color-mix(in srgb, var(--text-normal) 8%, transparent);
+  border-color: color-mix(in srgb, var(--interactive-accent) 50%, transparent);
+  box-shadow:
+    inset 0 1px 1px color-mix(in srgb, var(--text-normal) 15%, transparent),
+    inset 0 -1px 2px color-mix(in srgb, var(--interactive-accent) 20%, transparent),
+    0 8px 16px rgba(0, 0, 0, 0.15),
+    0 0 15px color-mix(in srgb, var(--interactive-accent) 30%, transparent);
+  transform: translateY(-2px);
+}
+
+.om-script-btn--style-glass:active {
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 10px var(--interactive-accent),
+    0 0 25px var(--interactive-accent);
+  transform: translateY(1px);
+  transition: all 0.1s ease-out;
+}
+
+
+
+
+
+.theme-light .om-script-btn--style-glass {
+  background-color: rgba(255, 255, 255, 0.4);
+  background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.2) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.9), 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.theme-light .om-script-btn--style-glass:hover {
+  background-color: rgba(255, 255, 255, 0.7);
+  border-color: var(--interactive-accent);
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 1),
+    0 8px 16px rgba(0, 0, 0, 0.08),
+    0 0 15px rgba(var(--interactive-accent-rgb), 0.2);
+}
+
+.om-script-btn--style-glass.om-script-btn--color-primary {
+  color: var(--interactive-accent);
+  background-color: color-mix(in srgb, var(--interactive-accent) 15%, transparent);
+  border-color: color-mix(in srgb, var(--interactive-accent) 40%, transparent);
+  box-shadow: inset 0 1px 1px color-mix(in srgb, var(--interactive-accent) 20%, transparent), 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.om-script-btn--style-glass.om-script-btn--color-primary:hover {
+  background-color: color-mix(in srgb, var(--interactive-accent) 25%, transparent);
+  border-color: color-mix(in srgb, var(--interactive-accent) 70%, transparent);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--interactive-accent) 30%, transparent), 0 0 15px color-mix(in srgb, var(--interactive-accent) 40%, transparent);
+}
+
+.om-script-btn--style-glass.om-script-btn--color-success {
+  color: var(--color-green);
+  background-color: color-mix(in srgb, var(--color-green) 15%, transparent);
+  border-color: color-mix(in srgb, var(--color-green) 40%, transparent);
+  box-shadow: inset 0 1px 1px color-mix(in srgb, var(--color-green) 20%, transparent), 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.om-script-btn--style-glass.om-script-btn--color-success:hover {
+  background-color: color-mix(in srgb, var(--color-green) 25%, transparent);
+  border-color: color-mix(in srgb, var(--color-green) 70%, transparent);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--color-green) 30%, transparent), 0 0 15px color-mix(in srgb, var(--color-green) 40%, transparent);
+}
+
+.om-script-btn--style-glass.om-script-btn--color-warning {
+  color: var(--color-orange);
+  background-color: color-mix(in srgb, var(--color-orange) 15%, transparent);
+  border-color: color-mix(in srgb, var(--color-orange) 40%, transparent);
+}
+
+.om-script-btn--style-glass.om-script-btn--color-warning:hover {
+  background-color: color-mix(in srgb, var(--color-orange) 25%, transparent);
+  border-color: color-mix(in srgb, var(--color-orange) 70%, transparent);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--color-orange) 30%, transparent), 0 0 15px color-mix(in srgb, var(--color-orange) 40%, transparent);
+}
+
+.om-script-btn--style-glass.om-script-btn--color-danger {
+  color: var(--text-error);
+  background-color: color-mix(in srgb, var(--text-error) 15%, transparent);
+  border-color: color-mix(in srgb, var(--text-error) 40%, transparent);
+}
+
+.om-script-btn--style-glass.om-script-btn--color-danger:hover {
+  background-color: color-mix(in srgb, var(--text-error) 25%, transparent);
+  border-color: color-mix(in srgb, var(--text-error) 70%, transparent);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--text-error) 30%, transparent), 0 0 15px color-mix(in srgb, var(--text-error) 40%, transparent);
 }
 
 .om-error-text {

@@ -1,4 +1,4 @@
-import { App, Notice, TFile, MarkdownView } from 'obsidian';
+import { App, Notice, TFile, MarkdownView, FuzzySuggestModal } from 'obsidian';
 import { ButtonConfig } from '../../core/types';
 import { GroqService } from '../ai-chat/groq-service';
 
@@ -30,6 +30,9 @@ export class ActionRunner {
                 case 'ai-prompt':
                     await this.aiPrompt(config);
                     break;
+                case 'load-context':
+                    await this.loadContext(config);
+                    break;
                 default:
                     new Notice(`Неизвестное действие: ${action}`);
             }
@@ -45,7 +48,7 @@ export class ActionRunner {
         const pad = (n: number) => n.toString().padStart(2, '0');
 
         const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-        const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+        const timeStr = `${pad(now.getHours())}-${pad(now.getMinutes())}`; // Используем дефис, чтобы было безопасно для имен файлов в Windows
         const vaultName = this.app.vault.getName();
 
         let result = text
@@ -300,5 +303,67 @@ export class ActionRunner {
         } else {
             new Notice('Ответ AI:\n' + aiResponse, 10000);
         }
+    }
+
+    private async loadContext(config: ButtonConfig) {
+        const { folder } = config; // Опциональный фильтр папки
+        const folderPath = folder ? await this.applyVariables(folder, this.getActiveTitle()) : '';
+
+        let allFiles = this.app.vault.getMarkdownFiles();
+        if (folderPath) {
+            allFiles = allFiles.filter(f => f.path.startsWith(folderPath));
+        }
+
+        if (allFiles.length === 0) {
+            new Notice('Нет доступных файлов контекста в указанной папке');
+            return;
+        }
+
+        new FileSuggestModal(this.app, allFiles, async (file) => {
+            const content = await this.app.vault.read(file);
+            const msgContent = `[Системное сообщение] Контекст из файла "${file.basename}" загружен:\n\n${content}`;
+
+            // Отправляем кастомное событие, которое слушает ChatApp
+            window.dispatchEvent(new CustomEvent('om-add-chat-message', {
+                detail: {
+                    role: 'system',
+                    content: msgContent
+                }
+            }));
+
+            // Открываем/обновляем вкладку чата, чтобы пользователь увидел результат
+            const chatLeaves = this.app.workspace.getLeavesOfType('obsidian-maker-ai-chat');
+            if (chatLeaves.length > 0) {
+                const leaf = chatLeaves[0];
+                if (leaf) {
+                    this.app.workspace.revealLeaf(leaf);
+                }
+            } else {
+                // Если чат закрыт, можно попробовать выполнить команду его открытия
+                // @ts-ignore
+                this.app.commands.executeCommandById('obsidian-maker:open-ai-chat');
+            }
+
+            new Notice(`Контекст из "${file.basename}" добавлен в чат`);
+        }).open();
+    }
+}
+
+class FileSuggestModal extends FuzzySuggestModal<TFile> {
+    constructor(app: App, private files: TFile[], private onChoose: (file: TFile) => void) {
+        super(app);
+        this.setPlaceholder('Выберите файл контекста...');
+    }
+
+    getItems(): TFile[] {
+        return this.files;
+    }
+
+    getItemText(item: TFile): string {
+        return item.path; // Можно показывать путь вместо только имени
+    }
+
+    onChooseItem(item: TFile, evt: MouseEvent | KeyboardEvent): void {
+        this.onChoose(item);
     }
 }

@@ -5,7 +5,7 @@
 // ============ SCRIPT BUTTONS ============
 
 export type ButtonColor = 'default' | 'primary' | 'success' | 'warning' | 'danger';
-export type ButtonStyle = 'filled' | 'outline' | 'ghost';
+export type ButtonStyle = 'filled' | 'outline' | 'ghost' | 'glass';
 
 export interface ButtonConfig {
     label: string;

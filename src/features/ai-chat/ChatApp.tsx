@@ -5,14 +5,32 @@ import { generateId } from '../../utils/debounce';
 import type { VaultService } from './vault-service';
 import { AiActionParser, AiParsedAction } from './action-parser';
 import { AiActionCard } from './AiActionCard';
+import { ActionRunner } from '../script-buttons/action-runner';
+import type { ButtonConfig } from '../../core/types';
 
 interface ChatAppProps {
     groqService: GroqService;
     vaultService: VaultService;
 }
 
-const QUICK_ACTIONS = [
-    { label: '📝 Саммари', prompt: 'Сделай краткое резюме текущей заметки.' },
+const QUICK_ACTIONS: { label: string, prompt?: string, config?: ButtonConfig }[] = [
+    {
+        label: '📝 Сохр. Саммари', config: {
+            label: "Сделать саммари и сохранить",
+            action: "create-note",
+            folder: "🧠 Contexts",
+            filename: "Контекст - {{title}} ({{datetime}})",
+            content: "> Это автоматически сгенерированное саммари для задачи: **{{title}}**\n\n{{ai:Сделай подробное структурированное саммари текущей заметки.}}",
+            open: false
+        }
+    },
+    {
+        label: '📥 Загр. Контекст', config: {
+            label: "Загрузить контекст в AI",
+            action: "load-context",
+            folder: "🧠 Contexts"
+        }
+    },
     { label: '✨ Исправить', prompt: 'Исправи грамматические и пунктуационные ошибки в тексте заметки, сохранив стиль.' },
     { label: '🏷 Теги', prompt: 'Предложи 5 релевантных хештегов для этой заметки.' },
     { label: '❓ Объяснить', prompt: 'Объясни основные идеи этой заметки простыми словами.' },
@@ -37,6 +55,25 @@ export function ChatApp({ groqService, vaultService }: ChatAppProps) {
     // Фокус на поле ввода при загрузке
     useEffect(() => {
         inputRef.current?.focus();
+    }, []);
+
+    // Слушатель для получения контекста из других частей плагина (через кнопки)
+    useEffect(() => {
+        const handleAddContext = (e: Event) => {
+            const customEvent = e as CustomEvent;
+            if (customEvent.detail && customEvent.detail.content) {
+                const sysMessage: ChatMessage = {
+                    id: generateId(),
+                    role: customEvent.detail.role || 'system',
+                    content: customEvent.detail.content,
+                    timestamp: Date.now() // generateId generates from debounce? wait, generateId uses crypto
+                };
+                setMessages(prev => [...prev, sysMessage]);
+            }
+        };
+
+        window.addEventListener('om-add-chat-message', handleAddContext);
+        return () => window.removeEventListener('om-add-chat-message', handleAddContext);
     }, []);
 
     const sendMessage = useCallback(async (overridePrompt?: string) => {
@@ -198,7 +235,14 @@ export function ChatApp({ groqService, vaultService }: ChatAppProps) {
                         <button
                             key={action.label}
                             class="om-chat-quick-btn"
-                            onClick={() => void sendMessage(action.prompt)}
+                            onClick={() => {
+                                if (action.config) {
+                                    const runner = new ActionRunner(vaultService.app, groqService);
+                                    runner.execute(action.config, vaultService.app.workspace.getActiveFile()?.basename || 'Untitled');
+                                } else if (action.prompt) {
+                                    void sendMessage(action.prompt);
+                                }
+                            }}
                             disabled={isLoading}
                         >
                             {action.label}
